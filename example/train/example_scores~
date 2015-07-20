@@ -1,0 +1,24 @@
+New d. weights: [0.15, 0.35, 0.1, 0.4]
+
+sys1 vs. reference
+
+Segment 1 score:	0.22901145298665918
+Segment 1 Xscore:	0.23825292881125984
+
+Segment 2 score:	0.29079304191743255
+Segment 2 Xscore:	0.28094588649872804
+
+Final score:            0.2596577518509062
+Final Xscore:           0.2597642641602622
+
+
+sys2 vs. reference
+
+Segment 1 score:	0.24736216195936686
+Segment 1 Xscore:	0.2483670309601956
+
+Segment 2 score:	0.31776555582765464
+Segment 2 Xscore:	0.3089058585171464
+
+Final score:            0.28320566084380516
+Final Xscore:           0.27992283522950034

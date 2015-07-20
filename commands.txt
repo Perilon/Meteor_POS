@@ -1,0 +1,11 @@
+E.g.
+
+Scoring
+
+java -Xmx2G -jar Meteor_POS.jar wmt_data/wmt14-data/txt/system-outputs/newstest2014/cs-en/newstest2014.cu-moses.3383.cs-en wmt_data/wmt14-data/txt/references/newstest2014-csen-ref.en -ndw "0.30 0.35 0.10 0.25" -norm -l en
+
+
+Training
+
+java -cp Meteor_POS.jar Trainer_ndw rank training_wmt14 -a filtered14.gz > train14.out
+

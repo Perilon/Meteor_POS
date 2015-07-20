@@ -1,0 +1,67 @@
+This directory contains the results of WMT13 manual (human) evaluation
+in the file "wmt13-judgments.csv". For more information, see the WMT13
+Overview paper. That and this data can be found on the WMT13 results
+page: statmt.org/wmt13/results.html .
+
+The first line of this file is a header defining the following
+fields. This is the "WMT" format. Many of the fields are no longer
+used, but we have kept the same format to keep things consistent
+across the past few years of the manual evaluation. The fields are:
+
+- {src,trg}lang: the source and target language
+- srcIndex: the sentence number (1-indexed)
+- documentId: not used (set to -1)
+- segmentId: the sentence number (same as srcIndex)
+- judgeId: the anonymized judge name. Researchers and Turkers are
+  distinguished.
+- system[12345]Number: not used (set to -1)
+- system[12345]Id: the system name (e.g., newstest2013.es-en.JHU.2776)
+- system[1234]rank: the rank the judge assigned to this task 
+  (1 is best, 5 is worst)
+
+New this year, we also provide a script for analyzing the data, which
+could be useful in diagnosing problems with a particular
+system. "visualize.py" displays all sentences for a language pair for
+which judgments were found, sorting the systems for each segment by
+their aggregate ranks.
+
+To use, first download the WMT13 raw data and set the $WMT13
+environment variable:
+
+    wget -q http://statmt.org/wmt13/wmt13-data.tar.gz
+    tar xf wmt13-data.tar.gz
+    export WMT13=$(pwd)/wmt13-data
+
+This environment variable is used by the visualization script.
+
+Usage: visualize.py [-path PATH_TO_WMT_DATA] [-judge PREFIX] JUDGMENTS LANGPAIR
+
+where
+  - PATH_TO_WMT_DATA is where you downloaded the WMT system outputs
+    (available on the WMT13 results page)
+  - PREFIX is a judge name prefix (field 6). By default, all judgments from
+    the judgments file are included, but you can, for example,
+    restrict this to only researchers (or turkers) by using "researcher"
+    or "turker", respectively.
+  - JUDGMENTS is the file containing judgments (e.g,. "wmt13-judgments.csv".
+  - LANGPAIR is the language pair.
+
+e.g.,
+
+    $ python visualize.py wmt13-judgments.csv de-en | less
+    SENTENCE 1
+    SOURCE Eine republikanische Strategie, um der Wiederwahl von Obama entgegenzutreten
+    REFERENCE A Republican strategy to counter the re-election of Obama
+    [0.62] A Republican strategy to counter the re-election of Obama [RWTH-Jane-primary]
+    [0.25] A Republican strategy to counter the re-election of Obama [LIMSI-Ncode-SOUL-primary]
+    [0.25] A Republican strategy to counter the re-election of Obama [TUBITAK]
+    [0.25] A Republican strategy to counter the re-election of Obama [QUAERO_primary]
+    [0.00] A Republican strategy, to confront the re-election of Obama [MES:]
+    [0.00] A Republican strategy to oppose the re-election of Obama [uedin-wmt13]
+    [0.00] A Republican strategy in order to counter the re - election of President Obama [desrt]
+    [0.00] A Republican strategy to confront the re-election of Obama [JHU]
+    ...
+
+The bracketed score is the percentage of time the system *on that
+sentence* was judged to be better than the other systems it was
+compared to in pairwise comparisons.

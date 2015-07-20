@@ -1,0 +1,315 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% LaTeX Example: Project Report
+%
+% Source: http://www.howtotex.com
+%
+% Feel free to distribute this example, but please keep the referral
+% to howtotex.com
+% Date: March 2011 
+% 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% How to use writeLaTeX: 
+%
+% You edit the source code here on the left, and the preview on the
+% right shows you the result within a few seconds.
+%
+% Bookmark this page and share the URL with your co-authors. They can
+% edit at the same time!
+%
+% You can upload figures, bibliographies, custom classes and
+% styles using the files menu.
+%
+% If you're new to LaTeX, the wikibook is a great place to start:
+% http://en.wikibooks.org/wiki/LaTeX
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Edit the title below to update the display in My Documents
+%\title{Project Report}
+%
+%%% Preamble
+\documentclass[paper=a4, fontsize=11pt]{scrartcl}
+\usepackage[T1]{fontenc}
+
+\usepackage[english]{babel}															% English language/hyphenation
+\usepackage[protrusion=true,expansion=true]{microtype}	
+\usepackage{amsmath,amsfonts,amsthm} % Math packages
+\usepackage{url}
+\usepackage{cite}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{mathabx}
+\usepackage[table,xcdraw]{xcolor}
+\usepackage{polyglossia}
+\setotherlanguage{greek}
+\newfontfamily\greekfont[Script=Greek,Ligatures=TeX]{CMU Serif Roman}
+
+\def\threedots{\hbox{\,.\hspace{.33em}.\hspace{.33em}.\hspace{.33em}\,}}
+\def\fourdots{\hbox{.\hspace{.33em}.\hspace{.33em}.\hspace{.33em}.\hspace{.33em}\,}}
+
+%%% Custom sectioning
+\usepackage{sectsty}
+\allsectionsfont{\centering \normalfont\scshape}
+
+
+%%% Custom headers/footers (fancyhdr package)
+\usepackage{fancyhdr}
+\pagestyle{fancyplain}
+\fancyhead{}											% No page header
+\fancyfoot[L]{}											% Empty 
+\fancyfoot[C]{}											% Empty
+\fancyfoot[R]{\thepage}									% Pagenumbering
+\renewcommand{\headrulewidth}{0pt}			% Remove header underlines
+\renewcommand{\footrulewidth}{0pt}				% Remove footer underlines
+\setlength{\headheight}{13.6pt}
+
+
+%%% Equation and float numbering
+\numberwithin{equation}{section}		% Equationnumbering: section.eq#
+\numberwithin{figure}{section}			% Figurenumbering: section.fig#
+\numberwithin{table}{section}				% Tablenumbering: section.tab#
+
+
+%%% Maketitle metadata
+\newcommand{\horrule}[1]{\rule{\linewidth}{#1}} 	% Horizontal rule
+
+\title{
+		%\vspace{-1in} 	
+		\usefont{OT1}{bch}{b}{n}
+		\normalfont \normalsize \textsc{Lab in NLP\textemdash Spring 2015\textemdash 11-712} \\ [25pt]
+		\horrule{0.5pt} \\[0.4cm]
+		\huge Extending Meteor With POS-based \\ Word Classes \\
+		\horrule{2pt} \\[0.5cm]
+}
+\author{
+		\normalfont 								\normalsize
+        Andrew Wilkinson\\[-3pt]		\normalsize
+        \today
+}
+\date{}
+
+
+%%% Begin document
+\begin{document}
+\maketitle
+\section{Introduction}
+
+In this project, I modify the Meteor machine translation (MT) evaluation metric by replacing its distinction between content and function words with a more fine-grained distinction between part-of-speech categories.  The hypothesis is that since the content/function word dichotomy is rather coarse, other ways of defining and weighting word classes may yield better overall results for the metric.  I adapt the Meteor source code by integrating a POS (part-of-speech) tagger, classifying words into POS categories, and changing the way in which scores are calculated.  I then learn parameter weights that optimize Meteor performance on training data, as measured by correlation with human judgments of rank.  Finally, I present results that show an improvement in performance on test data compared to output from the default configuration.
+
+\section{Methodology}
+
+The latest version of Meteor (1.5) \cite{meteor1.5} has four tunable parameters $\alpha$, $\beta$, $\gamma$, and $\delta$ that, respectively, govern the relative importance of precision and recall, determine the relationship between chunks and the penalty, set a maximum value for the penalty, and govern the relative importance of content and function words.  This distinction between content and function words is central to the current Meteor equations, yet is a simple and somewhat arbitrary way of conceptualizing and quantifying a linguistic concept that is important to MT and to NLP in general.
+
+In place of this, I use the Stanford Part-Of-Speech tagger (version 3.5.2) \cite{stanfordpos} as part of the Meteor project structure to tag words in the hypothesis translations and reference sentences.  (Any POS tagger could theoretically be used.  The Stanford tagger was relatively simple to implement, being written in Java as is Meteor; and it performs near the top in accuracy rankings.)  This tagger outputs a total of 36 POS tags, corresponding to those used in the Penn Treebank project \cite{treebank}.  This is too numerous a set to be of use for the current purpose.  An intermediate level of representation was needed that is more fine-grained than ``content/function'' but broader than 36 categories.  I chose to define four broad POS categories, with each tag belonging to one and only one of them (Table \ref{init_poscats}).
+
+\begin{table}[htbp]
+\caption{Initial POS categories\textemdash System 1}
+\label{init_poscats}
+\resizebox{\linewidth}{!}{
+\begin{tabular}{@{}llllllll@{}}
+\toprule
+\multicolumn{2}{c}{Adjective/Adverb}                       & \multicolumn{2}{c}{Noun}                            & \multicolumn{2}{c}{Verb}                               & \multicolumn{2}{c}{Other}       \\ \midrule
+JJ  & \multicolumn{1}{l|}{Adjective}              & NN    & \multicolumn{1}{l|}{Noun, singular or mass} & VB  & \multicolumn{1}{l|}{Verb, base form}             & CC  & Coordinating conj.  \\
+JJR & \multicolumn{1}{l|}{Adjective, comparative} & NNS   & \multicolumn{1}{l|}{Noun, plural}           & VBD & \multicolumn{1}{l|}{Verb, past tense}            & CD  & Cardinal number           \\
+JJS & \multicolumn{1}{l|}{Adjective, superlative} & NNP   & \multicolumn{1}{l|}{Proper noun, singular}  & VBG & \multicolumn{1}{l|}{Verb, gerund or pres. part.} & DT  & Determiner                \\
+RB  & \multicolumn{1}{l|}{Adverb}                 & NNPS  & \multicolumn{1}{l|}{Proper noun, plural}    & VBN & \multicolumn{1}{l|}{Verb, past part.}            & EX  & Existential \textit{there}         \\
+RBR & \multicolumn{1}{l|}{Adverb, comparative}    & PRP   & \multicolumn{1}{l|}{Personal pronoun}       & VBP & \multicolumn{1}{l|}{Verb, non-3p sing. pres.}    & FW  & Foreign word              \\
+RBS & \multicolumn{1}{l|}{Adverb, superlative}    & PRP\$ & \multicolumn{1}{l|}{Possessive pronoun}     & VBZ & \multicolumn{1}{l|}{Verb, 3p sing. pres.}        & IN  & Preposition or sub. conj. \\
+    & \multicolumn{1}{l|}{}                       & WP    & \multicolumn{1}{l|}{\textit{Wh}-pronoun}             &     & \multicolumn{1}{l|}{}                            & LS  & List item marker          \\
+    & \multicolumn{1}{l|}{}                       & WP\$  & \multicolumn{1}{l|}{Possessive \textit{wh}-pronoun}  &     & \multicolumn{1}{l|}{}                            & MD  & Modal                     \\
+    & \multicolumn{1}{l|}{}                       & WRB   & \multicolumn{1}{l|}{\textit{Wh}-adverb}              &     & \multicolumn{1}{l|}{}                            & PDT & Predeterminer             \\
+    & \multicolumn{1}{l|}{}                       &       & \multicolumn{1}{l|}{}                       &     & \multicolumn{1}{l|}{}                            & POS & Possessive ending         \\
+    & \multicolumn{1}{l|}{}                       &       & \multicolumn{1}{l|}{}                       &     & \multicolumn{1}{l|}{}                            & RP  & Particle                  \\
+    & \multicolumn{1}{l|}{}                       &       & \multicolumn{1}{l|}{}                       &     & \multicolumn{1}{l|}{}                            & SYM & Symbol                    \\
+    & \multicolumn{1}{l|}{}                       &       & \multicolumn{1}{l|}{}                       &     & \multicolumn{1}{l|}{}                            & TO  & \textit{to}                        \\
+    & \multicolumn{1}{l|}{}                       &       & \multicolumn{1}{l|}{}                       &     & \multicolumn{1}{l|}{}                            & UH  & Interjection              \\
+    & \multicolumn{1}{l|}{}                       &       & \multicolumn{1}{l|}{}                       &     & \multicolumn{1}{l|}{}                            & WDT & \textit{Wh}-determiner             \\ \bottomrule
+\end{tabular}}
+\end{table}
+
+Deciding upon these categories was based firstly on linguistic intuition.  Nouns, verbs, adjectives, and adverbs are traditional delineations of grammar cross-linguistically, and the clearer the lines are between those categories, the more such a categorization will ``reward'' an MT system that does well translating members of each class of words.  On the other hand, items like ``predeterminer'' and ``particle'' are less well-defined across grammars, less easily correctly identifiable by a POS tagger, more likely to be translated periphrastically by an MT system (if at all), and less important to comprehension and judgments of fluency (many function words belong to the tags classified in ``Other'').  Secondly, I wanted to keep the space of possible reasonably-defined categories under control.  Since the number of possible categorizations of tags (even ones that make intuitive sense) gets very large very fast, it made sense to limit the set size to four and to be guided in fine-tuning the sets by what the data would show to be most promising.
+
+In fitting this framework into the existing Meteor scoring metric, each POS category $n$, as above, is weighted by a new $\delta_n$ parameter, which replaces the $\delta$ and ($1 - \delta$) weights currently assigned to the content and function word categories, respectively.  So, replacing the current precision and recall equations
+
+$$ P = \frac{ \sum_i w_i \cdot (\delta \cdot m_i (h_c) + (1-\delta) \cdot m_i (h_f)) }{ \delta \cdot \vert h_c \vert + (1-\delta) \cdot \vert h_f \vert  }, R = \frac{ \sum_i w_i \cdot (\delta \cdot m_i (r_c) + (1-\delta) \cdot m_i (r_f)) }{ \delta \cdot \vert r_c \vert + (1-\delta) \cdot \vert r_f \vert }$$
+
+\noindent are new equations given by
+
+$$ P = \frac{ \sum_i w_i \cdot (\sum_n ( \delta_n \cdot m_i (h_n))) }{ \sum_n (\delta_n \cdot \vert h_n \vert )  }, R = \frac{ \sum_i w_i \cdot (\sum_n ( \delta_n \cdot m_i (r_n))) }{ \sum_n (\delta_n \cdot \vert r_n \vert )} $$
+
+\noindent where words of each POS category are identified in the hypothesis translation $(h_n)$ and reference sentence $(r_n)$, weights $w_i$ for the four ``matcher'' modules are applied to each category as before, $0 \leq \delta_n \leq 1 \hspace{4pt} \forall \hspace{4pt} \delta_n$, and $\sum_n \delta_n = 1$.
+
+Implementing the new scoring protocol in the Meteor source code required adding a \texttt{Tagger} class to tag words, adding to and adapting existing methods in many classes to keep track of which words in a sentence belong to which POS category and fall under which matcher module, collecting new statistics, and using those statistics to calculate scores in a new way.
+
+In order to learn and tune weights for the new delta parameters, I used the procedure that has been used in the past to tune the other parameters and the matcher weights.  I obtained the Workshop on Statistical Machine Translation (WMT) data from the years 2012, 2013, and 2014, which include MT system submissions for a variety of language pairs, source and reference sentences, and human rankings of the relative quality of system outputs for individual source sentences from each language pair \cite{wmt} .  Using the provided \texttt{unroll\_wmt\_ranks.py} and \texttt{sgmlize.py} scripts, I extracted the relevant pairwise rankings from the datasets from each year and rendered the reference sentences and hypothesis translations in the format used by the \texttt{Trainer} class.  (According to Denkowski \& Lavie \cite{DKLV11}, the data from 2009 and 2010 were used previously in tuning; however, the files from those years were in a different format from the later years and it would have been too time-consuming to adapt them for my purposes.)  I combined the 2013 and 2014 datasets to use as a training set, and used the 2012 dataset as a test set; details are given in Table \ref{datasets}.
+
+
+\begin{table}[htbp]
+\caption{Datasets}
+\label{datasets}
+\resizebox{\linewidth}{!}{
+\begin{tabular}{l|l|l|l|l|l|l|l|}
+\cline{2-8}
+                                            & \multicolumn{1}{c|}{Source languages} & \multicolumn{1}{c|}{MT systems} & \multicolumn{2}{c|}{Total systems}          & \multicolumn{1}{c|}{Rankings} & \multicolumn{2}{c|}{Total rankings}                  \\ \hline
+\multicolumn{1}{|l|}{\multirow{4}{*}{2012}} & CS                                    & 6                               & \multicolumn{2}{l|}{\multirow{4}{*}{49}}    & 11,021                        & \multicolumn{2}{l|}{\multirow{4}{*}{44,345}}         \\ \cline{2-3} \cline{6-6}
+\multicolumn{1}{|l|}{}                      & DE                                    & 16                              & \multicolumn{2}{l|}{}                       & 11,934                        & \multicolumn{2}{l|}{}                                \\ \cline{2-3} \cline{6-6}
+\multicolumn{1}{|l|}{}                      & ES                                    & 12                              & \multicolumn{2}{l|}{}                       & 9,796                         & \multicolumn{2}{l|}{}                                \\ \cline{2-3} \cline{6-6}
+\multicolumn{1}{|l|}{}                      & FR                                    & 15                              & \multicolumn{2}{l|}{}                       & 11,594                        & \multicolumn{2}{l|}{}                                \\ \hline
+\multicolumn{1}{|l|}{\multirow{5}{*}{2013}} & CS                                    & 12                              & \multirow{5}{*}{94} & \multirow{10}{*}{142} & 85,469                        & \multirow{5}{*}{514,132} & \multirow{10}{*}{615,235} \\ \cline{2-3} \cline{6-6}
+\multicolumn{1}{|l|}{}                      & DE                                    & 23                              &                     &                       & 128,668                       &                          &                           \\ \cline{2-3} \cline{6-6}
+\multicolumn{1}{|l|}{}                      & ES                                    & 17                              &                     &                       & 67,832                        &                          &                           \\ \cline{2-3} \cline{6-6}
+\multicolumn{1}{|l|}{}                      & FR                                    & 19                              &                     &                       & 80,741                        &                          &                           \\ \cline{2-3} \cline{6-6}
+\multicolumn{1}{|l|}{}                      & RU                                    & 23                              &                     &                       & 151,422                       &                          &                           \\ \cline{1-4} \cline{6-7}
+\multicolumn{1}{|l|}{\multirow{5}{*}{2014}} & CS                                    & 5                               & \multirow{5}{*}{48} &                       & 15,732                        & \multirow{5}{*}{101,103} &                           \\ \cline{2-3} \cline{6-6}
+\multicolumn{1}{|l|}{}                      & DE                                    & 13                              &                     &                       & 18,310                        &                          &                           \\ \cline{2-3} \cline{6-6}
+\multicolumn{1}{|l|}{}                      & FR                                    & 8                               &                     &                       & 18,603                        &                          &                           \\ \cline{2-3} \cline{6-6}
+\multicolumn{1}{|l|}{}                      & HI                                    & 9                               &                     &                       & 19,620                        &                          &                           \\ \cline{2-3} \cline{6-6}
+\multicolumn{1}{|l|}{}                      & RU                                    & 13                              &                     &                       & 28,838                        &                          &                           \\ \hline
+\end{tabular}}
+\end{table}
+
+After appropriate adaptation, the \texttt{Trainer} class was then used on each dataset to iterate over all the possible configurations of the new delta parameters by increments of 0.05, and for each configuration used, output the correlation over that dataset with the human rankings.  The correlation is measured using the ``Kendall's tau'' metric, where $\tau = \frac{C - (T - C)}{T}$.  In this equation, $C = $ the number of pairwise rankings that Meteor scored correctly.  (For Meteor to be ``correct'' on a pairwise ranking, the translation given the higher score of the pair is also the translation rated as the better of the pair by the human.)  $T = $ the total number of pairwise rankings.  A list of scores with corresponding new delta parameter weights, upon sorting from greatest to least, yields the optimal parameter configuration for the dataset and the Meteor score achieved with that configuration.  This number can then be compared to the result obtained using standard Meteor with the default configuration; a score higher than the default indicates that this method is successful in yielding better correlation with human judgments.
+
+\section{Results}
+
+For all experiments I conducted, I kept the $\alpha$, $\beta$, and $\gamma$ parameters at their default values of 0.85, 0.2, and 0.6 respectively.  The original $\delta$ parameter, which was replaced in my systems with the $\delta_n$ parameters, was always kept at its default value of 0.75 for the default system.  I used the \texttt{-norm} argument throughout to tokenize and lowercase the input.  I initially kept the matcher module weights at their default values, and later experimented with optimizing them, as will be seen.  I first produced the optimized correlation using the combined 2013-2014 training set, with the POS categories defined as in Table \ref{init_poscats}.  I call this configuration of POS categories System 1.  Table \ref{13-14-1} shows my baseline results.
+
+\begin{table}[htbp]
+\caption{Training Set Results\textemdash System 1}
+\label{13-14-1}
+\resizebox{\linewidth}{!}{
+\begin{tabular}{llllllclll|}
+\cline{3-10}
+                                                            & \multicolumn{1}{l|}{}              & \multicolumn{4}{c|}{Default}                                                                              & \multicolumn{4}{c|}{System 1}                                                                                     \\ \hline
+\multicolumn{1}{|l|}{\multirow{2}{*}{Matcher weights}}      & \multicolumn{1}{l|}{Module number} & \multicolumn{1}{c|}{1}   & \multicolumn{1}{c|}{2}   & \multicolumn{1}{c|}{3}   & \multicolumn{1}{c|}{4}   & \multicolumn{1}{c|}{1}       & \multicolumn{1}{c|}{2}    & \multicolumn{1}{c|}{3}     & \multicolumn{1}{c|}{4}    \\ \cline{2-10} 
+\multicolumn{1}{|l|}{}                                      & \multicolumn{1}{l|}{Value}         & \multicolumn{1}{l|}{1.0} & \multicolumn{1}{l|}{0.6} & \multicolumn{1}{l|}{0.8} & \multicolumn{1}{l|}{0.6} & \multicolumn{1}{l|}{1.0}     & \multicolumn{1}{l|}{0.6}  & \multicolumn{1}{l|}{0.8}   & 0.6                       \\ \hline
+\multicolumn{1}{|l}{}                                       &                                    &                          &                          &                          &                          & \multicolumn{1}{l}{}         &                           &                            &                           \\ \hline
+\multicolumn{1}{|l|}{\multirow{2}{*}{New delta parameters}} & \multicolumn{1}{l|}{POS category}  &                          &                          &                          & \multicolumn{1}{l|}{}    & \multicolumn{1}{c|}{Adj/Adv} & \multicolumn{1}{c|}{Noun} & \multicolumn{1}{c|}{Other} & \multicolumn{1}{c|}{Verb} \\ \cline{2-10} 
+\multicolumn{1}{|l|}{}                                      & \multicolumn{1}{l|}{Value}         &                          &                          &                          & \multicolumn{1}{l|}{}    & \multicolumn{1}{l|}{0.3}     & \multicolumn{1}{l|}{0.35} & \multicolumn{1}{l|}{0.1}   & 0.25                      \\ \hline
+\multicolumn{1}{|l}{}                                       &                                    &                          &                          &                          &                          & \multicolumn{1}{l}{}         &                           &                            &                           \\ \hline
+\multicolumn{2}{|l|}{Kendall's $\tau$}                                                           & \multicolumn{4}{c|}{0.23539}                                                                              & \multicolumn{4}{c|}{{\bf 0.24024}}                                                                                \\ \hline
+\multicolumn{2}{|l|}{Correct rankings}                                                           & \multicolumn{4}{c|}{380,028}                                                                              & \multicolumn{4}{c|}{{\bf 381,518}}                                                                                \\ \hline
+\multicolumn{2}{|l|}{Percent correct rankings}                                                   & \multicolumn{4}{c|}{61.77\%}                                                                              & \multicolumn{4}{c|}{{\bf 62.01\%}}                                                                                \\ \hline
+\end{tabular}}
+\end{table}
+
+This instantiation of Meteor correctly ranks 1,490 more of the sentence pairs than the default version does.  This is an increase of 0.392\% over the default, and an increase of 0.242\% of the total pairwise rankings\textemdash a modest success.  I decided to define a few more configurations of POS categories to see if I could improve performance further.  System 2 removed the tag MD from ``Other'' and added it to ``Verbs''; System 3 did the same as System 2 and also removed the tags \{PRP, PRP\$, WP, WP\$, WRB\} from ``Nouns'' and added them to ``Other''; System 4 added the tags \{PRP, PRP\$, WP, WP\$, WRB\} to ``Other'' and removed all other tags except for \{PDT, POS, WDT\} from ``Other.''    Table \ref{13-14-2-3-4} shows the results.
+
+\begin{table}[htbp]
+\caption{Training Set Results\textemdash Systems 2, 3, 4}
+\label{13-14-2-3-4}
+\resizebox{\linewidth}{!}{
+\begin{tabular}{llllllclll}
+\cline{3-10}
+                                                            & \multicolumn{1}{l|}{}              & \multicolumn{4}{c|}{Default}                                                                                      & \multicolumn{4}{c|}{System 2}                                                                                     \\ \hline
+\multicolumn{1}{|l|}{\multirow{2}{*}{Matcher weights}}      & \multicolumn{1}{l|}{Module number} & \multicolumn{1}{c|}{1}       & \multicolumn{1}{c|}{2}    & \multicolumn{1}{c|}{3}     & \multicolumn{1}{c|}{4}    & \multicolumn{1}{c|}{1}       & \multicolumn{1}{c|}{2}    & \multicolumn{1}{c|}{3}     & \multicolumn{1}{c|}{4}    \\ \cline{2-10} 
+\multicolumn{1}{|l|}{}                                      & \multicolumn{1}{l|}{Value}         & \multicolumn{1}{l|}{1.0}     & \multicolumn{1}{l|}{0.6}  & \multicolumn{1}{l|}{0.8}   & \multicolumn{1}{l|}{0.6}  & \multicolumn{1}{l|}{1.0}     & \multicolumn{1}{l|}{0.6}  & \multicolumn{1}{l|}{0.8}   & \multicolumn{1}{l|}{0.6}  \\ \hline
+\multicolumn{1}{|l}{}                                       &                                    &                              &                           &                            &                           & \multicolumn{1}{l}{}         &                           &                            & \multicolumn{1}{l|}{}     \\ \hline
+\multicolumn{1}{|l|}{\multirow{2}{*}{New delta parameters}} & \multicolumn{1}{l|}{POS category}  &                              &                           &                            & \multicolumn{1}{l|}{}     & \multicolumn{1}{c|}{Adj/Adv} & \multicolumn{1}{c|}{Noun} & \multicolumn{1}{c|}{Other} & \multicolumn{1}{c|}{Verb} \\ \cline{2-10} 
+\multicolumn{1}{|l|}{}                                      & \multicolumn{1}{l|}{Value}         &                              &                           &                            & \multicolumn{1}{l|}{}     & \multicolumn{1}{l|}{0.3}     & \multicolumn{1}{l|}{0.35} & \multicolumn{1}{l|}{0.1}   & \multicolumn{1}{l|}{0.25} \\ \hline
+\multicolumn{1}{|l}{}                                       &                                    &                              &                           &                            &                           & \multicolumn{1}{l}{}         &                           &                            & \multicolumn{1}{l|}{}     \\ \hline
+\multicolumn{2}{|l|}{Kendall's $\tau$}                                                           & \multicolumn{4}{c|}{0.23539}                                                                                      & \multicolumn{4}{c|}{{\bf 0.24069}}                                                                                \\ \hline
+\multicolumn{2}{|l|}{Correct rankings}                                                           & \multicolumn{4}{c|}{380,028}                                                                                      & \multicolumn{4}{c|}{{\bf 381,657}}                                                                                \\ \hline
+\multicolumn{2}{|l|}{Percent correct rankings}                                                   & \multicolumn{4}{c|}{61.77\%}                                                                                      & \multicolumn{4}{c|}{{\bf 62.03\%}}                                                                                \\ \hline
+                                                            &                                    &                              &                           &                            &                           & \multicolumn{1}{l}{}         &                           &                            &                           \\ \cline{3-10} 
+                                                            & \multicolumn{1}{l|}{}              & \multicolumn{4}{c|}{System 3}                                                                                     & \multicolumn{4}{c|}{System 4}                                                                                     \\ \hline
+\multicolumn{1}{|l|}{\multirow{2}{*}{Matcher weights}}      & \multicolumn{1}{l|}{Module number} & \multicolumn{1}{c|}{1}       & \multicolumn{1}{c|}{2}    & \multicolumn{1}{c|}{3}     & \multicolumn{1}{c|}{4}    & \multicolumn{1}{c|}{1}       & \multicolumn{1}{c|}{2}    & \multicolumn{1}{c|}{3}     & \multicolumn{1}{c|}{4}    \\ \cline{2-10} 
+\multicolumn{1}{|l|}{}                                      & \multicolumn{1}{l|}{Value}         & \multicolumn{1}{l|}{1.0}     & \multicolumn{1}{l|}{0.6}  & \multicolumn{1}{l|}{0.8}   & \multicolumn{1}{l|}{0.6}  & \multicolumn{1}{l|}{1.0}     & \multicolumn{1}{l|}{0.6}  & \multicolumn{1}{l|}{0.8}   & \multicolumn{1}{l|}{0.6}  \\ \hline
+                                                            &                                    &                              &                           &                            &                           & \multicolumn{1}{l}{}         &                           &                            & \multicolumn{1}{l|}{}     \\ \hline
+\multicolumn{1}{|l|}{\multirow{2}{*}{New delta parameters}} & \multicolumn{1}{l|}{POS category}  & \multicolumn{1}{l|}{Adj/Adv} & \multicolumn{1}{l|}{Noun} & \multicolumn{1}{l|}{Other} & \multicolumn{1}{l|}{Verb} & \multicolumn{1}{l|}{Adj/Adv} & \multicolumn{1}{l|}{Noun} & \multicolumn{1}{l|}{Other} & \multicolumn{1}{l|}{Verb} \\ \cline{2-10} 
+\multicolumn{1}{|l|}{}                                      & \multicolumn{1}{l|}{Value}         & \multicolumn{1}{l|}{0.25}    & \multicolumn{1}{l|}{0.35} & \multicolumn{1}{l|}{0.15}  & \multicolumn{1}{l|}{0.25} & \multicolumn{1}{l|}{0.3}     & \multicolumn{1}{l|}{0.35} & \multicolumn{1}{l|}{0.15}  & \multicolumn{1}{l|}{0.2}  \\ \hline
+\multicolumn{1}{|l}{}                                       &                                    &                              &                           &                            &                           & \multicolumn{1}{l}{}         &                           &                            & \multicolumn{1}{l|}{}     \\ \hline
+\multicolumn{2}{|l|}{Kendall's $\tau$}                                                           & \multicolumn{4}{c|}{0.23771}                                                                                      & \multicolumn{4}{c|}{0.22457}                                                                                      \\ \hline
+\multicolumn{2}{|l|}{Correct rankings}                                                           & \multicolumn{4}{c|}{380,741}                                                                                      & \multicolumn{4}{c|}{376,699}                                                                                      \\ \hline
+\multicolumn{2}{|l|}{Percent correct rankings}                                                   & \multicolumn{4}{c|}{61.89\%}                                                                                      & \multicolumn{4}{c|}{61.23\%}                                                                                      \\ \hline
+\end{tabular}}
+\end{table}
+
+System 2 yielded the best results.  System 3 surpassed the default, but did not do as well as System 2; System 4 did not do as well as the default.
+
+Thus far, the only difference in weights between my experimental systems and the default was the replacement of delta by the new delta parameters.  For my next experiment, I kept the new delta parameters at the optimal values found by System 2, kept the change in POS categories (MD being added to ``Verbs''), and iterated over the weights for matcher modules 2, 3, and 4.  Table \ref{13-14-5} shows the resulting System 5.
+
+\begin{table}[htbp]
+\caption{Training Set Results\textemdash System 5}
+\label{13-14-5}
+\resizebox{\linewidth}{!}{
+\begin{tabular}{llllllclll|}
+\cline{3-10}
+                                                            & \multicolumn{1}{l|}{}              & \multicolumn{4}{c|}{Default}                                                                              & \multicolumn{4}{c|}{System 5}                                                                                     \\ \hline
+\multicolumn{1}{|l|}{\multirow{2}{*}{Matcher weights}}      & \multicolumn{1}{l|}{Module number} & \multicolumn{1}{c|}{1}   & \multicolumn{1}{c|}{2}   & \multicolumn{1}{c|}{3}   & \multicolumn{1}{c|}{4}   & \multicolumn{1}{c|}{1}       & \multicolumn{1}{c|}{2}    & \multicolumn{1}{c|}{3}     & \multicolumn{1}{c|}{4}    \\ \cline{2-10} 
+\multicolumn{1}{|l|}{}                                      & \multicolumn{1}{l|}{Value}         & \multicolumn{1}{l|}{1.0} & \multicolumn{1}{l|}{0.6} & \multicolumn{1}{l|}{0.8} & \multicolumn{1}{l|}{0.6} & \multicolumn{1}{l|}{1.0}     & \multicolumn{1}{l|}{0.7}  & \multicolumn{1}{l|}{0.6}   & 0.6                       \\ \hline
+\multicolumn{1}{|l}{}                                       &                                    &                          &                          &                          &                          & \multicolumn{1}{l}{}         &                           &                            &                           \\ \hline
+\multicolumn{1}{|l|}{\multirow{2}{*}{New delta parameters}} & \multicolumn{1}{l|}{POS category}  &                          &                          &                          & \multicolumn{1}{l|}{}    & \multicolumn{1}{c|}{Adj/Adv} & \multicolumn{1}{c|}{Noun} & \multicolumn{1}{c|}{Other} & \multicolumn{1}{c|}{Verb} \\ \cline{2-10} 
+\multicolumn{1}{|l|}{}                                      & \multicolumn{1}{l|}{Value}         &                          &                          &                          & \multicolumn{1}{l|}{}    & \multicolumn{1}{l|}{0.3}     & \multicolumn{1}{l|}{0.35} & \multicolumn{1}{l|}{0.1}   & 0.25                      \\ \hline
+\multicolumn{1}{|l}{}                                       &                                    &                          &                          &                          &                          & \multicolumn{1}{l}{}         &                           &                            &                           \\ \hline
+\multicolumn{2}{|l|}{Kendall's $\tau$}                                                           & \multicolumn{4}{c|}{0.23539}                                                                              & \multicolumn{4}{c|}{{\bf 0.24069}}                                                                                \\ \hline
+\multicolumn{2}{|l|}{Correct rankings}                                                           & \multicolumn{4}{c|}{380,028}                                                                              & \multicolumn{4}{c|}{{\bf 381,962}}                                                                                \\ \hline
+\multicolumn{2}{|l|}{Percent correct rankings}                                                   & \multicolumn{4}{c|}{61.77\%}                                                                              & \multicolumn{4}{c|}{{\bf 62.08\%}}                                                                                \\ \hline
+\end{tabular}}
+\end{table}
+
+Finally, I conducted experiments to see whether the values obtained from optimizing on the training set would also outperform the default on a different dataset.  Table \ref{testset} shows the results.  Naturally, when I optimized the new delta parameters and the matcher weights on the test set, that yielded the best results (boldfaced cells).  However, using the new delta parameters obtained from the training set (italicized cells) also outperforms the default configuration.  It is unclear if optimizing the matcher weights made a significant difference across the trials.
+
+\begin{table}[]
+\centering
+\caption{Test Set Results}
+\label{testset}
+\resizebox{\linewidth}{!}{
+\begin{tabular}{llclllclll}
+\cline{3-10}
+                                                                                                                                        & \multicolumn{1}{l|}{}              & \multicolumn{4}{c|}{Default matcher weights}                                                                      & \multicolumn{4}{c|}{System 5 matcher weights}                                                                             \\ \hline
+\multicolumn{1}{|l|}{\multirow{2}{*}{Matcher weights}}                                                                                  & \multicolumn{1}{l|}{Module number} & \multicolumn{1}{c|}{1}       & \multicolumn{1}{c|}{2}    & \multicolumn{1}{c|}{3}     & \multicolumn{1}{c|}{4}    & \multicolumn{1}{c|}{1}       & \multicolumn{1}{c|}{2}    & \multicolumn{1}{c|}{3}     & \multicolumn{1}{c|}{4}    \\ \cline{2-10} 
+\multicolumn{1}{|l|}{}                                                                                                                  & \multicolumn{1}{l|}{Value}         & \multicolumn{1}{l|}{1.0}     & \multicolumn{1}{l|}{0.6}  & \multicolumn{1}{l|}{0.8}   & \multicolumn{1}{l|}{0.6}  & \multicolumn{1}{l|}{1.0}     & \multicolumn{1}{l|}{0.7}  & \multicolumn{1}{l|}{0.6}   & \multicolumn{1}{l|}{0.6}  \\ \hline
+\multicolumn{1}{|l}{}                                                                                                                   &                                    & \multicolumn{1}{l}{}         &                           &                            &                           & \multicolumn{1}{l}{}         &                           &                            & \multicolumn{1}{l|}{}     \\ \hline
+\multicolumn{2}{|l|}{Kendall's $\tau$}                                                                                                                                       & \multicolumn{4}{c|}{0.24731}                                                                                      & \multicolumn{4}{c|}{0.24884}                                                                                      \\ \hline
+\multicolumn{2}{|l|}{Correct rankings}                                                                                                                                       & \multicolumn{4}{c|}{27,656}                                                                                       & \multicolumn{4}{c|}{27,690}                                                                                       \\ \hline
+\multicolumn{2}{|l|}{Percent correct rankings}                                                                                                                               & \multicolumn{4}{c|}{62.37\%}                                                                                      & \multicolumn{4}{c|}{62.44\%}                                                                                      \\ \hline
+                                                                                                                                        &                                    & \multicolumn{1}{l}{}         &                           &                            &                           & \multicolumn{1}{l}{}         &                           &                            &                           \\ \cline{3-10} 
+                                                                                                                                        & \multicolumn{1}{l|}{}              & \multicolumn{4}{c|}{Default matcher weights}                                                                      & \multicolumn{4}{c|}{System 5 matcher weights}                                                                             \\ \hline
+\multicolumn{1}{|l|}{\multirow{2}{*}{Matcher weights}}                                                                                  & \multicolumn{1}{l|}{Module number} & \multicolumn{1}{c|}{1}       & \multicolumn{1}{c|}{2}    & \multicolumn{1}{c|}{3}     & \multicolumn{1}{c|}{4}    & \multicolumn{1}{c|}{1}       & \multicolumn{1}{c|}{2}    & \multicolumn{1}{c|}{3}     & \multicolumn{1}{c|}{4}    \\ \cline{2-10} 
+\multicolumn{1}{|l|}{}                                                                                                                  & \multicolumn{1}{l|}{Value}         & \multicolumn{1}{l|}{1.0}     & \multicolumn{1}{l|}{0.6}  & \multicolumn{1}{l|}{0.8}   & \multicolumn{1}{l|}{0.6}  & \multicolumn{1}{l|}{1.0}     & \multicolumn{1}{l|}{0.7}  & \multicolumn{1}{l|}{0.6}   & \multicolumn{1}{l|}{0.6}  \\ \hline
+\multicolumn{1}{|l|}{\multirow{2}{*}{\begin{tabular}[c]{@{}l@{}}New delta parameters\\ \textemdash from training set\end{tabular}}}     & \multicolumn{1}{c|}{POS category}  & \multicolumn{1}{c|}{Adj/Adv} & \multicolumn{1}{c|}{Noun} & \multicolumn{1}{c|}{Other} & \multicolumn{1}{c|}{Verb} & \multicolumn{1}{c|}{Adj/Adv} & \multicolumn{1}{c|}{Noun} & \multicolumn{1}{c|}{Other} & \multicolumn{1}{c|}{Verb} \\ \cline{2-10} 
+\multicolumn{1}{|l|}{}                                                                                                                  & \multicolumn{1}{l|}{Value}         & \multicolumn{1}{l|}{0.3}     & \multicolumn{1}{l|}{0.35} & \multicolumn{1}{l|}{0.1}   & \multicolumn{1}{l|}{0.25} & \multicolumn{1}{l|}{0.3}     & \multicolumn{1}{l|}{0.35} & \multicolumn{1}{l|}{0.10}  & \multicolumn{1}{l|}{0.25} \\ \hline
+\multicolumn{2}{|l|}{}                                                                                                                                                       & \multicolumn{1}{l}{}         &                           &                            &                           & \multicolumn{1}{l}{}         &                           &                            & \multicolumn{1}{l|}{}     \\ \hline
+\multicolumn{2}{|l|}{Kendall's $\tau$}                                                                                                                                       & \multicolumn{4}{c|}{{\it 0.25710}}                                                                                & \multicolumn{4}{c|}{{\it 0.25669}}                                                                                \\ \hline
+\multicolumn{2}{|l|}{Correct rankings}                                                                                                                                       & \multicolumn{4}{c|}{{\it 27,873}}                                                                                 & \multicolumn{4}{c|}{{\it 27,864}}                                                                                 \\ \hline
+\multicolumn{2}{|l|}{Percent correct rankings}                                                                                                                               & \multicolumn{4}{c|}{{\it 62.85\%}}                                                                                & \multicolumn{4}{c|}{{\it 62.83\%}}                                                                                \\ \hline
+                                                                                                                                        &                                    & \multicolumn{1}{l}{}         &                           &                            &                           & \multicolumn{1}{l}{}         &                           &                            &                           \\ \cline{3-10} 
+                                                                                                                                        & \multicolumn{1}{l|}{}              & \multicolumn{4}{c|}{Default matcher weights}                                                                      & \multicolumn{4}{c|}{System 5 matcher weights}                                                                             \\ \hline
+\multicolumn{1}{|l|}{\multirow{2}{*}{Matcher weights}}                                                                                  & \multicolumn{1}{l|}{Module number} & \multicolumn{1}{c|}{1}       & \multicolumn{1}{c|}{2}    & \multicolumn{1}{c|}{3}     & \multicolumn{1}{c|}{4}    & \multicolumn{1}{c|}{1}       & \multicolumn{1}{c|}{2}    & \multicolumn{1}{c|}{3}     & \multicolumn{1}{c|}{4}    \\ \cline{2-10} 
+\multicolumn{1}{|l|}{}                                                                                                                  & \multicolumn{1}{l|}{Value}         & \multicolumn{1}{l|}{1.0}     & \multicolumn{1}{l|}{0.6}  & \multicolumn{1}{l|}{0.8}   & \multicolumn{1}{l|}{0.6}  & \multicolumn{1}{l|}{1.0}     & \multicolumn{1}{l|}{0.7}  & \multicolumn{1}{l|}{0.6}   & \multicolumn{1}{l|}{0.6}  \\ \hline
+\multicolumn{1}{|l|}{\multirow{2}{*}{\begin{tabular}[c]{@{}l@{}}New delta parameters\\ \textemdash optimized on test set\end{tabular}}} & \multicolumn{1}{l|}{POS category}  & \multicolumn{1}{c|}{Adj/Adv} & \multicolumn{1}{c|}{Noun} & \multicolumn{1}{c|}{Other} & \multicolumn{1}{c|}{Verb} & \multicolumn{1}{c|}{Adj/Adv} & \multicolumn{1}{c|}{Noun} & \multicolumn{1}{c|}{Other} & \multicolumn{1}{c|}{Verb} \\ \cline{2-10} 
+\multicolumn{1}{|l|}{}                                                                                                                  & \multicolumn{1}{l|}{Value}         & \multicolumn{1}{l|}{0.25}    & \multicolumn{1}{l|}{0.4}  & \multicolumn{1}{l|}{0.05}  & \multicolumn{1}{l|}{0.3}  & \multicolumn{1}{l|}{0.25}    & \multicolumn{1}{l|}{0.4}  & \multicolumn{1}{l|}{0.05}  & \multicolumn{1}{l|}{0.3}  \\ \hline
+\multicolumn{1}{|l}{}                                                                                                                   &                                    & \multicolumn{1}{l}{}         &                           &                            &                           & \multicolumn{1}{l}{}         &                           &                            & \multicolumn{1}{l|}{}     \\ \hline
+\multicolumn{2}{|l|}{Kendall's $\tau$}                                                                                                                                       & \multicolumn{4}{c|}{{\bf 0.26030}}                                                                                & \multicolumn{4}{c|}{{\bf 0.26039}}                                                                                \\ \hline
+\multicolumn{2}{|l|}{Correct rankings}                                                                                                                                       & \multicolumn{4}{c|}{{\bf 27,944}}                                                                                 & \multicolumn{4}{c|}{{\bf 27,946}}                                                                                 \\ \hline
+\multicolumn{2}{|l|}{Percent correct rankings}                                                                                                                               & \multicolumn{4}{c|}{{\bf 63.01\%}}                                                                                & \multicolumn{4}{c|}{{\bf 63.02\%}}                                                                                \\ \hline
+\end{tabular}}
+\end{table}
+
+\section{Conclusion and Potential Future Work}
+
+After altering the code for Meteor to take part-of-speech categories into consideration when scoring candidate translations and calculating the correlations with human judgments of MT system quality that result, I am pleased to observe that this method gives consistent improvement over scoring using the content/function word distinction on both the training set and the test set.  The amount of improvement seems small, measured in tenths of a percent of the total number of pairwise judgments in a dataset.  I do not, however, have the experience to judge the utility of this level of improvement in terms of commercial or research application.  It seems to me that no MT evaluation metric could hope to recreate human judgments with anything approaching 100\% accuracy, because human judgments are subjective, fickle, and often contradictory.  In any case, I have by no means exhausted this course of inquiry.  There are a number of ways in which I could see this work being improved upon.
+
+First, the brute-force approach of searching over the whole parameter space more completely than I did here would probably yield higher correlations.  However, the more variables there are, the more likely overfitting becomes.  It is for this reason that I began by keeping all the old values at their previously-defined optima.  I also think it unlikely that there exists a significant dependent relationship between all the variables; for some it is no doubt higher than for others.  I chose to search over matcher weights because I felt that the types of matches they represent (stemmed, synonym, paraphrase) might have more interrelation with POS categories than the $\alpha$, $\beta$ and $\gamma$ parameters do, yet the change from the default was modest.  So this might represent only a limited source of reproducible further improvements.
+
+Second, a scoring metric based on a POS tagger can only be as good as the tagger itself.  In turn, the tagger will not perform as well on grammatically messy, disfluent input\textemdash the type of input that characterizes many, if not most, MT output sentences\textemdash as it will on fluent language (and even that yields plenty of errors).  There is a lot of noise in this domain that prevents other NLP applications from functioning as well as they might.  Perhaps there could be a way of leveraging the aligner, or using machine learning, to pass more-likely-to-be-correct tags from a reference to a hypothesis sentence.  For instance, perhaps the tagger correctly identifies the word ``fall'' in the reference as a verb, but incorrectly in the hypothesis as a noun.  If incorrect tags could be ``overridden'' and tagger accuracy improved for the system outputs, that might benefit the end result of this approach.
+
+Third, there are a great many possible configurations of POS categories using the PTB tag set that I have not explored.  Perhaps a five-way or three-way distinction would be better; maybe adverbs and adjectives do not belong together.  Maybe pronouns should have their own category.  My experiments showed that it is an easy thing to describe configurations that underperform the default.  This lends credence to the underlying assumption that grammatical categories can be salient features for MT purposes in the first place.  If it didn't matter which tags were grouped with which others, we would see little gain or drop in the results, and the values learned might end up about equal.  Yet there is a trend in the results that is clearly visible when viewing the top 10 or 20 parameter configurations compared to the bottom tier:  Nouns (as I defined them) are the most important\textemdash they receive the highest weight overall\textemdash followed by the adjective/adverb class and verb class at approximately the same level, followed distantly by ``other.''  I could see results like these being used to more usefully prioritize and deprioritize accuracy in MT systems along grammatical-category lines.
+
+
+\begin{thebibliography}{6}
+
+\bibitem{meteor1.5} \url{https://www.cs.cmu.edu/~alavie/METEOR/pdf/meteor-1.5.pdf}
+
+\bibitem{stanfordpos} \url{http://nlp.stanford.edu/software/tagger.shtml}
+
+\bibitem{treebank} \url{https://www.ling.upenn.edu/courses/Fall_2003/ling001/penn_treebank_pos.html}
+
+\bibitem{wmt} \url{http://www.statmt.org}
+
+\bibitem{DKLV11} Michael Denkowski and Alon Lavie, ``Meteor 1.3: Automatic Metric for Reliable Optimization and Evaluation of Machine Translation Systems'', Proceedings of the EMNLP 2011 Workshop on Statistical Machine Translation, 2011.
+
+\end{thebibliography}
+
+%%% End document
+\end{document}
