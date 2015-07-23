@@ -591,33 +591,24 @@ public class Trainer_ndw {
 	public static Double[][] makeParams() {
 
 		int index = 0;
-		Double[][] oink = new Double[1771][4];
-		//ArrayList<Double[]> oink = new ArrayList<Double[]>();
-
+		Double[][] ndwParamArray = new Double[1771][4];
 		for (double i = 0.0; i <= 1.0 + e; i += 0.05) {
 			for (double j = 0.0; j <= 1.0 + e; j += 0.05) {
 				for (double k = 0.0; k <= 1.0 + e; k += 0.05) {
 					for (double L = 0.0; L <= 1.0 + e; L += 0.05) {
 						if ((i + j + k + L > (1.0 - e)) &&
 								(i + j + k + L < (1.0 + e))) {
-//                            pig[0] = i;
-//                            pig[1] = j;
-//                            pig[2] = k;
-//                            pig[3] = L;
-//                            oink.add(pig);
-//                            System.out.println(Arrays.toString(oink.get(index)));
-//                            index++;
-							oink[index][0] = i;
-							oink[index][1] = j;
-							oink[index][2] = k;
-							oink[index][3] = L;
+							ndwParamArray[index][0] = i;
+							ndwParamArray[index][1] = j;
+							ndwParamArray[index][2] = k;
+							ndwParamArray[index][3] = L;
 							index++;
 						}
 					}
 				}
 			}
 		}
-		return oink;
+		return ndwParamArray;
 	}
 
 	//ArrayList<Double[]> possibleParamList = makeParams();
@@ -626,9 +617,20 @@ public class Trainer_ndw {
 	private static void rerank() {
 		// Rescore if all weights specified
 
-		Double[][] possibleParamList = makeParams();
+		Double[][] possibleParamArray = makeParams();
 
-		for (int t = 0; t < possibleParamList.length; t++) {
+		double p1 = 0.85;
+		double p2 = 0.2;
+		double p3 = 0.6;
+		double p4 = 0.75;
+		double w1 = 1.0;
+		double w2 = 0.6;
+		double w3 = 0.8;
+		double w4 = 0.6;
+
+		double defaultScore = 0.0;
+
+		for (int t = 0; t < possibleParamArray.length; t++) {
 
 		//for (double w2 = 0; w2 <= 1.0 + e; w2 += 0.05) {
 
@@ -638,54 +640,64 @@ public class Trainer_ndw {
 
 					ArrayList<Double> p = new ArrayList<Double>();
 
-					p.add(0.85);
-					p.add(0.2);
-					p.add(0.6);
-					p.add(0.75);
+					p.add(p1);
+					p.add(p2);
+					p.add(p3);
+					p.add(p4);
 
 					ArrayList<Double> w = new ArrayList<Double>();
 
-					w.add(1.0);
-					w.add(0.6);
-					w.add(0.8);
-					w.add(0.6);
+					w.add(w1);
+					w.add(w2);
+					w.add(w3);
+					w.add(w4);
 
 					config.setParameters(p);
 					config.setModuleWeights(w);
 
 					ArrayList<Double> ndw = new ArrayList<Double>();
 
-					ndw.add(possibleParamList[t][0]);
-					ndw.add(possibleParamList[t][1]);
-					ndw.add(possibleParamList[t][2]);
-					ndw.add(possibleParamList[t][3]);
+					ndw.add(possibleParamArray[t][0]);
+					ndw.add(possibleParamArray[t][1]);
+					ndw.add(possibleParamArray[t][2]);
+					ndw.add(possibleParamArray[t][3]);
 
 					config.setNewDeltaWeights(ndw);
 
 					MeteorScorer scorer = new MeteorScorer(config);
 
-					ArrayList<Double> meteorScore = new ArrayList<Double>();
+					ArrayList<Double> meteorScoreNdw = new ArrayList<Double>();
 
-					//if (ndw.get(0) + ndw.get(1) + ndw.get(2) + ndw.get(3) == 1) {
+					ArrayList<Double> meteorScoreDef = new ArrayList<Double>();
+
+					if (t == 0) {
+						for (int seg = 0; seg < statsList.size(); seg++) {
+							MeteorStats stats = statsList.get(seg);
+							scorer.computeMetrics(stats);
+							meteorScoreDef.add(stats.score);
+						}
+						defaultScore = kendall(meteorScoreDef);
+					}
+
 					for (int seg = 0; seg < statsList.size(); seg++) {
 						MeteorStats stats = statsList.get(seg);
 						scorer.computeMetrics(stats);
-						meteorScore.add(stats.Xscore);
+						meteorScoreNdw.add(stats.Xscore);
 					}
 					//}
 //			else {
 //				return;
 					//}
 
-					double consist = kendall(meteorScore, ndw);
-
-					out.print(consist);
+					double consistNdw = kendall(meteorScoreNdw);
+					out.print(consistNdw);
 					for (Double m : p)
 						out.print(" " + df.format(m));
 					for (Double n : w)
 						out.print(" " + df.format(n));
 					for (Double o: ndw)
 						out.print(" " + df.format(o));
+					out.print(" " + defaultScore);
 					out.println();
 					//return;
 
@@ -702,7 +714,7 @@ public class Trainer_ndw {
 
 	}
 
-	private static double kendall(ArrayList<Double> meteorScore, ArrayList<Double> ndw) {
+	private static double kendall(ArrayList<Double> meteorScore) {
 
 		double correct = 0;
 		double total = 0;

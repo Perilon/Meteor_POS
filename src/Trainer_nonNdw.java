@@ -599,9 +599,9 @@ public class Trainer_nonNdw {
         possibleParamList[0][2] = 0.6;
         possibleParamList[0][3] = 0.75;
         possibleParamList[0][4] = 1.0;
-        possibleParamList[0][5] = 0.8;
-        possibleParamList[0][6] = 0.6;
-        possibleParamList[0][7] = 0.8;
+        possibleParamList[0][5] = 0.6;
+        possibleParamList[0][6] = 0.8;
+        possibleParamList[0][7] = 0.6;
 
         for (int t = 0; t < possibleParamList.length; t++) {
 
@@ -649,7 +649,7 @@ public class Trainer_nonNdw {
 //				return;
             //}
 
-            double consist = kendall(meteorScore, ndw);
+            double consist = kendall(meteorScore);
 
             out.print(consist);
             for (Double n : possibleParamList[t])
@@ -665,7 +665,7 @@ public class Trainer_nonNdw {
 //		}
     }
 
-    private static double kendall(ArrayList<Double> meteorScore, ArrayList<Double> ndw) {
+    private static double kendall(ArrayList<Double> meteorScore) {
 
         double correct = 0;
         double total = 0;
