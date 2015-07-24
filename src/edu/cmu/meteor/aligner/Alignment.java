@@ -28,6 +28,7 @@ public class Alignment {
 	public HashSet<Integer> line1FunctionWords;
 	public HashSet<Integer> line2FunctionWords;
 
+	// New
 	public HashSet<Integer> line1Adjadvs;
 	public HashSet<Integer> line2Adjadvs;
 	public HashSet<Integer> line1Nouns;
@@ -77,10 +78,10 @@ public class Alignment {
 		words1 = tokenize(line1);
 		words2 = tokenize(line2);
 
-		Tagger oink1 = new Tagger(line1, tagger);
-		Tagger oink2 = new Tagger(line2, tagger);
-		tags1 = oink1.getTagged();
-		tags2 = oink2.getTagged();
+		Tagger line1tagged = new Tagger(line1, tagger);
+		Tagger line2tagged = new Tagger(line2, tagger);
+		tags1 = line1tagged.getTagged();
+		tags2 = line2tagged.getTagged();
 
 		initData(this.words2.size());
 		initData(this.tags2.size());
@@ -98,6 +99,8 @@ public class Alignment {
 		line1FunctionWords = new HashSet<Integer>();
 		line2FunctionWords = new HashSet<Integer>();
 
+		// New
+
 		line1Adjadvs = new HashSet<Integer>();
 		line2Adjadvs = new HashSet<Integer>();
 		line1Nouns = new HashSet<Integer>();
@@ -114,9 +117,10 @@ public class Alignment {
 
 		moduleContentMatches1 = new ArrayList<Integer>();
 		moduleContentMatches2 = new ArrayList<Integer>();
-
 		moduleFunctionMatches1 = new ArrayList<Integer>();
 		moduleFunctionMatches2 = new ArrayList<Integer>();
+
+		// New
 
 		moduleAdjAdvsMatches1 = new ArrayList<Integer>();
 		moduleAdjAdvsMatches2 = new ArrayList<Integer>();

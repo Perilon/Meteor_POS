@@ -199,8 +199,6 @@ public class Aligner {
 		this.newDeltaWeights = newDeltaWeights;
 	}
 
-	//--------------------------------------Above this is where things get weird
-
 	public Aligner(MaxentTagger tagger, String language, ArrayList<Integer> modules,
 			ArrayList<Double> moduleWeights, ArrayList<Double> newDeltaWeights,
 			int beamSize, URL wordFileURL,
@@ -566,9 +564,6 @@ public class Aligner {
 //				isOther2[i] = true;
 //				a.line2Other.add(i);
 //			}
-
-
-		// for (int i = 0; i < a.words1.size(); i++)
 
 
 		// Sum matches by module, word type

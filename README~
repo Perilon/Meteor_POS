@@ -1,0 +1,33 @@
+Adaptations to Meteor 1.5 made for a class project at the LTI, SCS, CMU by Andrew Wilkinson.
+
+Uses POS categories instead of content/function word distinction to improve Meteor's correlation with human judgments.
+
+See Final_Report/NLP_Lab_final_report_Wilkinson.pdf for discussion.
+
+This project is NOT an official update to Meteor and is NOT fully integrated with all its functionalities.  It is a class project that piggybacks on others' work.  It may not run right or at all if you try to use it other than in the ways I did.  All bugs and other errors are probably my fault.  My adaptations are for running the regular scorer and doing tuning of the new parameters I introduce, on English input.  If you are trying something else, good luck.  Et cetera.
+
+-----------------------
+Usage / commands, e.g.:
+-----------------------
+
+Scoring:  Outputs regular score using whatever module weights and alpha, beta, gamma and delta parameters are specified (or using default values if unspecified); also outputs new "Xscore" using those module weights, plus alpha, beta, and gamma parameters, plus whatever new delta parameters are specified using the -ndw argument (or using default values if unspecified).
+
+java -Xmx2G -jar Meteor_POS.jar wmt_data/wmt14-data/txt/system-outputs/newstest2014/cs-en/newstest2014.cu-moses.3383.cs-en wmt_data/wmt14-data/txt/references/newstest2014-csen-ref.en -ndw "0.30 0.35 0.10 0.25" -norm -l en
+
+---------------------------------
+
+Training:  Optimizes for new delta parameters.  Requires values for module weights and alpha, beta, gamma and delta parameters to be set in Trainer_ndw.java, rerank() method.  (They are set by default to Meteor 1.5's standard pre-optimized values.)  For each possible configuration of new delta parameters (there are 1,771), outputs Kendall's tau score for that configuration (using the module weights and alpha, beta, and gamma parameters), followed by a list of all the input values, followed by the Kendall's tau score for the regular configuration that uses the module weights and alpha, beta, gamma and delta parameters.  (That score will be the same on each line, since those values aren't changing.  If you want to iterate over any of those, you can implement that in the source code.)
+
+java -cp Meteor_POS.jar Trainer_ndw rank training_wmt14 -a filtered14.gz > train14.ndw.out
+
+
+
+Alternate training class:  Just prints out one line, the one Kendall's tau score for the module weights and alpha, beta, gamma and delta parameters specified.
+
+java -cp Meteor_POS.jar Trainer_nonNdw rank training_wmt14 -a filtered14.gz > train14.sdf.out
+
+
+
+Training to optimize for default parameters (using default Meteor)
+
+java -cp meteor_original.jar Trainer rank training_wmt14 -a filtered14.gz > train14.rg.out

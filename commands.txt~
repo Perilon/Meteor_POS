@@ -6,15 +6,15 @@ java -Xmx2G -jar Meteor_POS.jar wmt_data/wmt14-data/txt/system-outputs/newstest2
 
 
 
-Training to optimize for new delta weights, with specified default parameters
+Training to optimize for new delta parameters, with specified default parameters; prints Kendall's tau score for new configuration (4 module weights plus alpha, beta, gamma parameters plus 4 new delta parameters) plus tau score for default configuration (4 module weights plus alpha, beta, gamma, [original] delta parameters)
 
 java -cp Meteor_POS.jar Trainer_ndw rank training_wmt14 -a filtered14.gz > train14.ndw.out
 
 
 
-Training to find value for specified default parameters (for fast(er) comparison with results from above)
+Training to find value for specified default parameters (prints out one score only)
 
-java -cp Meteor_POS.jar Trainer_nonNdw rank training_wmt14 -a filtered14.gz > train14.df.out
+java -cp Meteor_POS.jar Trainer_nonNdw rank training_wmt14 -a filtered14.gz > train14.sdf.out
 
 
 

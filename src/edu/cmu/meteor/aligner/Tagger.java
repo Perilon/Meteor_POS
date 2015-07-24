@@ -16,7 +16,6 @@ import java.io.InputStreamReader;
 
 public class Tagger {
     String tagged;
-    String oink;
     ArrayList<String> tags_arraylist;
 
     private ArrayList<String> tokenize(String line) {
@@ -36,8 +35,6 @@ public class Tagger {
         this.tagged = tagger.tagTokenizedString(arg);
 
         String[] sentSplit = tagged.split("\\s+");
-
-        // this.oink = Arrays.toString(sentSplit);
 
         ArrayList<String> tags = new ArrayList<String>();
 

@@ -432,30 +432,6 @@ public class MeteorScorer {
 			}
 		}
 
-//		for (int i = 0; i < stats.XtestStageMatches.size(); i++) {
-//			stats.testAdjadvs += alignment.moduleAdjAdvsMatches1.get(i);
-//			stats.referenceAdjadvs += alignment.moduleAdjAdvsMatches2.get(i);
-//			stats.testNouns += alignment.moduleNounsMatches1.get(i);
-//			stats.referenceNouns += alignment.moduleNounsMatches2.get(i);
-//			stats.testOther += alignment.moduleOtherMatches1.get(i);
-//			stats.referenceOther += alignment.moduleOtherMatches2.get(i);
-//			stats.testVerbs += alignment.moduleVerbsMatches1.get(i);
-//			stats.testVerbs += alignment.moduleVerbsMatches2.get(i);
-//		}
-
-//		for (int j = 0; j < stats.XtestStageMatches_Adjadvs.size(); j++) {
-//			stats.XtestTotalMatches += stats.XtestStageMatches_Adjadvs.get(j);
-//		}
-//		for (int j = 0; j < stats.XtestStageMatches_Nouns.size(); j++) {
-//			stats.XtestTotalMatches += stats.XtestStageMatches_Nouns.get(j);
-//		}
-//		for (int j = 0; j < stats.XtestStageMatches_Other.size(); j++) {
-//			stats.XtestTotalMatches += stats.XtestStageMatches_Other.get(j);
-//		}
-//		for (int j = 0; j < stats.XtestStageMatches_Verbs.size(); j++) {
-//			stats.XtestTotalMatches += stats.XtestStageMatches_Verbs.get(j);
-//		}
-
 		// Meteor score is required to pick best reference
 		computeMetrics(stats);
 

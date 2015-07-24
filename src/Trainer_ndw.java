@@ -614,6 +614,17 @@ public class Trainer_ndw {
 	//ArrayList<Double[]> possibleParamList = makeParams();
 
 
+	// Specify alpha, beta, gamma, delta parameters and module weights in rerank()
+	//
+	// They will be used to calculate the default score, while also being used (except for delta)
+	// to calculate the new "Xscore"s along with the new delta parameter configurations used
+	// in the iteration over possibleParamArray
+	//
+	// A kendall's tau score will be output for each new delta parameter configuration,
+	// plus (at the end of each line) the value for the default score (which is the same on
+	// each line, since the default values aren't being optimized for and iterated over,
+	// just the new delta parameters)
+
 	private static void rerank() {
 		// Rescore if all weights specified
 

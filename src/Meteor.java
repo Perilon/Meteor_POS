@@ -213,7 +213,6 @@ public class Meteor {
 			} else {
 				System.out.println("Segment " + (i + 1) + " score:\t" + stats.score);
 				System.out.println("Segment " + (i + 1) + " Xscore:\t" + stats.Xscore);
-				//System.out.println(stats.Xscore);
 
 			}
 			if (writeAlignments) {
@@ -780,8 +779,6 @@ public class Meteor {
 		System.out.println("Final score:            " + stats.score);
 		System.out.println("Final Xscore:           " + stats.Xscore);
 	}
-
-
 
 	public static Properties createPropertiesFromArgs(String[] args,
 			int startIndex) {

@@ -76,7 +76,7 @@ public class MeteorStats {
 
 	/* Aggregable statistics */
 
-	// The following supplant testFunctionWords, referenceFunctionWords
+	// The following work like testFunctionWords, referenceFunctionWords
 
 	public double testAdjadvs;
 	public double testNouns;
@@ -87,7 +87,7 @@ public class MeteorStats {
 	public double referenceOther;
 	public double referenceVerbs;
 
-	// The following supplant testStageMatchesContent, testStageMatchesFunction,
+	// The following work like testStageMatchesContent, testStageMatchesFunction,
 	//						referenceStageMatchesContent, referenceStageMatchesFunction
 
 	public ArrayList<ArrayList<Double>> XtestStageMatches;
@@ -105,18 +105,9 @@ public class MeteorStats {
 	public double XtestTotalMatches;
 	public double XreferenceTotalMatches;
 
-//	public double XtestAdjadvMatches;
-//	public double XtestNounMatches;
-//	public double XtestOtherMatches;
-//	public double XtestVerbMatches;
-//	public double XreferenceAdjadvMatches;
-//	public double XreferenceNounMatches;
-//	public double XreferenceOtherMatches;
-//	public double XreferenceVerbMatches;
-
 	/* Calculated statistics */
 
-	// The following supplant testWeightedMatches, referenceWeightedMatches,
+	// The following work like testWeightedMatches, referenceWeightedMatches,
 	//						testWeightedLength, referenceWeightedLength
 
 	public double XprecisionNumerator;
@@ -200,16 +191,6 @@ public class MeteorStats {
 		XreferenceStageMatches.add(1, XreferenceStageMatches_Nouns);
 		XreferenceStageMatches.add(2, XreferenceStageMatches_Other);
 		XreferenceStageMatches.add(3, XreferenceStageMatches_Verbs);
-
-//		XtestAdjadvMatches = 0.0;
-//		XtestNounMatches = 0.0;
-//		XtestOtherMatches = 0.0;
-//		XtestVerbMatches = 0.0;
-//		XreferenceAdjadvMatches = 0.0;
-//		XreferenceNounMatches = 0.0;
-//		XreferenceOtherMatches = 0.0;
-//		XreferenceVerbMatches = 0.0;
-
 
 		XprecisionNumerator = 0.0;
 		XrecallNumerator = 0.0;
@@ -322,15 +303,6 @@ public class MeteorStats {
 		testWordMatches += ss.testWordMatches;
 		referenceWordMatches += ss.referenceWordMatches;
 
-//		XtestAdjadvMatches += ss.XtestAdjadvMatches;
-//		XtestNounMatches += ss.XtestNounMatches;
-//		XtestOtherMatches += ss. XtestOtherMatches;
-//		XtestVerbMatches += ss. XtestVerbMatches;
-//		XreferenceAdjadvMatches += ss.XreferenceAdjadvMatches;
-//		XreferenceNounMatches += ss.XreferenceNounMatches;
-//		XreferenceOtherMatches += ss.XreferenceOtherMatches;
-//		XreferenceVerbMatches += ss.XreferenceVerbMatches;
-
 		// Score does not aggregate
 	}
 
@@ -355,7 +327,7 @@ public class MeteorStats {
 	 * stage1tstMatchesVerbs stage1refMatchesVerbs
 	 *
 	 *
-	 * ex: 15 14 4 3 6 6 2 2 1 1 0 0 1 1 0 0 2 2 1 1 3 15 14 /
+	 * ex: 15 14 4 3 6 6 2 2 1 1 0 0 1 1 0 0 2 2 1 1 3 15 14 .............
 	 *
 	 *
 	 * 
@@ -419,16 +391,6 @@ public class MeteorStats {
 				sb.append(0.0 + delim);
 			}
 		}
-
-//		sb.append(XtestAdjadvMatches + delim);
-//		sb.append(XreferenceAdjadvMatches + delim);
-//		sb.append(XtestNounMatches + delim);
-//		sb.append(XreferenceNounMatches + delim);
-//		sb.append(XtestOtherMatches + delim);
-//		sb.append(XreferenceOtherMatches + delim);
-//		sb.append(XtestVerbMatches + delim);
-//		sb.append(XreferenceOtherMatches + delim);
-
 
 		return sb.toString().trim();
 	}

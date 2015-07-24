@@ -51,6 +51,8 @@ public class MeteorConfiguration {
 	private URL synDirURL;
 	private URL paraDirURL;
 
+	// New
+
 	private URL poscatsAdjadvURL;
 	private URL poscatsNounURL;
 	private URL poscatsOtherURL;
@@ -294,6 +296,8 @@ public class MeteorConfiguration {
 			ex.printStackTrace();
 		}
 	}
+
+	// New
 
 	public URL getPoscatsAdjadvURL() {
 		return poscatsAdjadvURL;

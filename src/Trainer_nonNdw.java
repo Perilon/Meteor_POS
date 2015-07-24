@@ -588,20 +588,30 @@ public class Trainer_nonNdw {
         rerank();
     }
 
+    // Specify alpha, beta, gamma, delta parameters and module weights in rerank()
 
     private static void rerank() {
         // Rescore if all weights specified
 
         Double[][] possibleParamList = new Double[1][8];
 
-        possibleParamList[0][0] = 0.85;
-        possibleParamList[0][1] = 0.2;
-        possibleParamList[0][2] = 0.6;
-        possibleParamList[0][3] = 0.75;
-        possibleParamList[0][4] = 1.0;
-        possibleParamList[0][5] = 0.6;
-        possibleParamList[0][6] = 0.8;
-        possibleParamList[0][7] = 0.6;
+        double p1 = 0.85;
+        double p2 = 0.2;
+        double p3 = 0.6;
+        double p4 = 0.75;
+        double w1 = 1.0;
+        double w2 = 0.6;
+        double w3 = 0.8;
+        double w4 = 0.6;
+
+        possibleParamList[0][0] = p1;
+        possibleParamList[0][1] = p2;
+        possibleParamList[0][2] = p3;
+        possibleParamList[0][3] = p4;
+        possibleParamList[0][4] = w1;
+        possibleParamList[0][5] = w2;
+        possibleParamList[0][6] = w3;
+        possibleParamList[0][7] = w4;
 
         for (int t = 0; t < possibleParamList.length; t++) {
 
@@ -623,10 +633,6 @@ public class Trainer_nonNdw {
             config.setModuleWeights(w);
 
             ArrayList<Double> ndw = new ArrayList<Double>();
-//			ndw.add(weights.get(0));
-//			ndw.add(weights.get(1));
-//			ndw.add(weights.get(2));
-//			ndw.add(weights.get(3));
 
             ndw.add(0.25);
             ndw.add(0.25);
